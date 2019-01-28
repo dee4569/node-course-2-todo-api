@@ -94,7 +94,7 @@ describe('GET /todos/:id', () => {
         //.get(`/todos/${_id.toHexString()}`)
         .expect(404)
         .end(done);
-    })
+    });
 
     it('should return 404 for non-object ids', (done) => {
         id = "1234";
@@ -102,5 +102,5 @@ describe('GET /todos/:id', () => {
         .get(`/todos/${id}`)
         .expect(404)
         .end(done);
-    })
+    });
 })
