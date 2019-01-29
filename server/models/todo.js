@@ -1,5 +1,6 @@
 var mongoose = require('mongoose');
 
+//defining the todo model with the required properties
 var Todo = mongoose.model('Todo', {
     text: {
         type: String,

@@ -15,6 +15,7 @@ const todos = [{
     completedAt:333
 }];
 
+//before each test case is run the database is wiped and the todos that were defined inserted back into the db
 beforeEach((done) => {
     Todo.deleteMany({}).then(() => {
         return Todo.insertMany(todos);
@@ -27,16 +28,21 @@ describe('POST /todos', () => {
         
         request(app)
          .post('/todos')
+         //sending the text object
          .send({text})
+         //expecting status code to be 200
          .expect(200)
+        //some expectations about the response body
          .expect((res) => {
             expect(res.body.text).toBe(text);
          })
+
          .end((err, res) =>{
             if(err) {
                 return done(err);
             }
 
+            //because just one todo is added the todos.length will be 1
             Todo.find({text}).then((todos) => {
                 expect(todos.length).toBe(1);
                 expect(todos[0].text).toBe(text);
@@ -109,6 +115,7 @@ describe('GET /todos/:id', () => {
 
 describe('DELETE /todo/:id', () =>{
     it('should remove a todo', (done) => {
+        //objectID is not a string value therfore to convert to a string you have to use tohexstring method
         var hexId = todos[1]._id.toHexString();
 
         request(app)

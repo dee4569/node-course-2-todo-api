@@ -10,15 +10,20 @@ var{Todo} = require('./models/todo');
 var {User} = require('./models/user');
 
 var app = express();
+
+//setting up the port to listen to 
 const port = process.env.PORT;
 
+//to get the values that have been passed in the body
 app.use(bodyParser.json());
 
 app.post('/todos', (req, res) => {
     var todo = new Todo({
+        //text property is got from the bodys
         text: req.body.text
     });
 
+    //saving the todo; and displaying the saved todo
     todo.save().then((doc) => {
         res.send(doc);
     }, (e) => {
@@ -26,21 +31,28 @@ app.post('/todos', (req, res) => {
     });
 });
 
+//getting all todos
 app.get('/todos', (req, res) => {
     Todo.find().then((todos) => {
+
+        //todos sent as an object
         res.send({todos});
     }, (e) => {
         res.status(400).send(e);
     });
 });
 
+//todos got according to id
 app.get('/todos/:id', (req,res) => {
     var id = req.params.id;
 
+    //check to see if the id that has been passed is valid
     if(!ObjectID.isValid(id)){
+        //if its not valid an error code is displayed
        return res.status(404).send();
     }
 
+    //finds todos by id
     Todo.findById(id).then((todo) => {
         if(!todo){
             return res.status(404).send();
@@ -62,29 +74,37 @@ app.delete('/todos/:id', (req, res) => {
         if(!todo){
             return res.status(404).send();
         }
+        //sends the todo that was deleted as the response
         res.send({todo});
     }).catch((e) => {
         res.status(400).send();
     });
 });
 
+//updates todos
 app.patch('/todos/:id', (req, res) => {
-    useFindAndModify=false;
-    
+
     var id = req.params.id;
+
+    //pick the attributes that you want
     var body = _.pick(req.body, ['text'], ['completed']);
 
     if(!ObjectID.isValid(id)){
         return res.status(404).send();
     }
 
+    //check if completed is a boolean and is true
     if(_.isBoolean(body.completed) && body.completed){
+        //if so completedAt is given a time
         body.completedAt = new Date().getTime();
     }else{
+        //sets the completed and completedAt values accordingly. if boolean is not specified
+        //the completed property is set to false
         body.completed = false;
         body.completedAt = null;
     }
 
+    //when updating you use the "$set" property and specify everything that needs to be set. 
     Todo.findByIdAndUpdate(id, {$set: body}, {new: true}).then((todo) =>{
         if(!todo){
             return res.status(400).send();
@@ -95,6 +115,20 @@ app.patch('/todos/:id', (req, res) => {
     })
 });
 
+// POST /users
+app.post('/users', (req, res) => {
+    //picking the eamil and password properties and passing it to the body variable
+    var body =_.pick(req.body,['email'], ['password']);
+    var user = new User(body);
+
+    user.save().then(() => {
+        return user.generateAuthToken();
+    }).then ((token) => {
+        res.header('x-auth', token).send(user);
+    }).catch((e) => {
+        res.status(404).send(e);
+    }); 
+});
 
 app.listen(port, () => {
     console.log(`Started on port ${port}`);
