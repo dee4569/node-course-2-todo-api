@@ -246,12 +246,10 @@ describe('POST /users', () => {
     it('should not create user if email in user', (done) =>{
         var email = 'katerina@example.com';
         var password = 'sadfasdfasdfadsf'
-
         request(app)
         .post('/users')
         .send({email, password})
         .expect(400)
         .end(done);
     });
-
 });
