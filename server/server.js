@@ -18,10 +18,11 @@ const port = process.env.PORT;
 //to get the values that have been passed in the body
 app.use(bodyParser.json());
 
-app.post('/todos', (req, res) => {
+app.post('/todos', authenticate, (req, res) => {
     var todo = new Todo({
         //text property is got from the bodys
-        text: req.body.text
+        text: req.body.text,
+        _creator: req.user._id
     });
 
     //saving the todo; and displaying the saved todo
@@ -33,8 +34,12 @@ app.post('/todos', (req, res) => {
 });
 
 //getting all todos
-app.get('/todos', (req, res) => {
-    Todo.find().then((todos) => {
+app.get('/todos', authenticate, (req, res) => {
+    Todo.find({
+
+        //only returning todos that the user actually created
+        _creator: req.user._id
+    }).then((todos) => {
 
         //todos sent as an object
         res.send({todos});
@@ -44,7 +49,7 @@ app.get('/todos', (req, res) => {
 });
 
 //todos got according to id
-app.get('/todos/:id', (req,res) => {
+app.get('/todos/:id', authenticate, (req,res) => {
     var id = req.params.id;
 
     //check to see if the id that has been passed is valid
@@ -53,8 +58,12 @@ app.get('/todos/:id', (req,res) => {
        return res.status(404).send();
     }
 
-    //finds todos by id
-    Todo.findById(id).then((todo) => {
+    //finds todos by id and the creator property to make sure
+    //that todos that are returned indeed belong to the user
+    Todo.findOne({
+        _id: id,
+        _creator: req.user._id
+    }).then((todo) => {
         if(!todo){
             return res.status(404).send();
         }
@@ -64,14 +73,17 @@ app.get('/todos/:id', (req,res) => {
     })
 });
 
-app.delete('/todos/:id', (req, res) => {
+app.delete('/todos/:id', authenticate, (req, res) => {
     var id = req.params.id;
 
     if(!ObjectID.isValid(id)){
         return res.status(404).send();
     }
 
-    Todo.findByIdAndDelete(id).then((todo) => {
+    Todo.findOneAndDelete({
+        _id: id,
+        _creator: req.user._id
+    }).then((todo) => {
         if(!todo){
             return res.status(404).send();
         }
@@ -83,7 +95,7 @@ app.delete('/todos/:id', (req, res) => {
 });
 
 //updates todos
-app.patch('/todos/:id', (req, res) => {
+app.patch('/todos/:id', authenticate, (req, res) => {
 
     var id = req.params.id;
 
@@ -106,13 +118,16 @@ app.patch('/todos/:id', (req, res) => {
     }
 
     //when updating you use the "$set" property and specify everything that needs to be set. 
-    Todo.findByIdAndUpdate(id, {$set: body}, {new: true}).then((todo) =>{
+    Todo.findOneAndUpdate({
+        _id: id,
+        _creator: req.user._id
+    }, {$set: body}, {new: true}).then((todo) =>{
         if(!todo){
-            return res.status(400).send();
+            return res.status(404).send();
         }
         res.send({todo});
     }).catch((e) => {
-        res.status(400).send();
+        res.status(404).send();
     })
 });
 
